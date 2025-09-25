@@ -56,6 +56,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'exceptions.exception_handler_status500',
+}
+
+
 ROOT_URLCONF = 'core.urls'
 
 TEMPLATES = [
@@ -160,3 +166,82 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# --- Logging configuration ----------------------------------------------------
+# This LOGGING dict enables console logging in development (DEBUG=True)
+# and also writes rotating log files for later inspection.
+
+LOG_LEVEL = 'DEBUG' if DEBUG else 'INFO'  # Choose a higher level in production
+
+LOGGING = {
+    'version': 1,  # DictConfig schema version
+    'disable_existing_loggers': False,  # Keep Django's default loggers
+    'filters': {
+        'require_debug_true': {  # Filter that only passes when DEBUG=True
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'formatters': {
+        'verbose': {  # Detailed format incl. module and process/thread IDs
+            'format': '[{levelname}] {asctime} {name} | {message}',
+            'style': '{',
+        },
+        'simple': {  # Shorter format for console
+            'format': '[{levelname}] {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {  # Print logs to stdout (shown in Docker logs too)
+            'level': LOG_LEVEL,
+            'class': 'logging.StreamHandler',
+            'filters': ['require_debug_true'],  # Only spam console in dev
+            'formatter': 'simple',
+        },
+        'file_app': {  # Rotating file handler for app-level logs
+            'level': LOG_LEVEL,
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(BASE_DIR / 'logs' / 'app.log'),  # Ensure folder exists
+            'maxBytes': 1024 * 1024 * 5,  # ~5MB per file
+            'backupCount': 3,  # Keep last 3 rotations
+            'formatter': 'verbose',
+        },
+        'file_django': {  # Separate file for Django internals if desired
+            'level': LOG_LEVEL,
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(BASE_DIR / 'logs' / 'django.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 3,
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        '': {  # Root logger catches everything not matched below
+            'handlers': ['console', 'file_app'],
+            'level': LOG_LEVEL,
+        },
+        'django': {  # Core Django logs (security, requests, etc.)
+            'handlers': ['console', 'file_django'],
+            'level': LOG_LEVEL,
+            'propagate': False,  # Don't bubble to root to avoid duplicates
+        },
+        'django.request': {  # 4xx/5xx request errors
+            'handlers': ['console', 'file_django'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.db.backends': {  # SQL queries (use DEBUG level here)
+            'handlers': ['console', 'file_django'],
+            'level': 'DEBUG' if DEBUG else 'WARNING',
+            'propagate': False,
+        },
+        # Your own modules (e.g., exceptions.py uses getLogger(__name__))
+        # Example: logger name 'core' or per-app like 'videos', 'accounts', etc.
+        'core': {
+            'handlers': ['console', 'file_app'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}
