@@ -1,0 +1,53 @@
+<!-- Simple, robust HTML email that mirrors your screenshot style -->
+<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f6f7fb;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb;padding:24px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+            <tr>
+              <td style="padding:24px 24px 8px 24px;text-align:left;">
+                <!-- Logo (use your FE asset path if you have one) -->
+                <div style="font-size:24px;font-weight:700;color:#6c2bd9;letter-spacing:0.5px;">
+                  VIDEOfliX
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 24px 0 24px;color:#0f172a;font-size:18px;line-height:28px;">
+                Dear <span style="font-weight:600;">{{ user_email }}</span>,
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 24px 0 24px;color:#334155;font-size:16px;line-height:26px;">
+                Thank you for registering with <strong>Videoflix</strong>. To complete your registration and verify your email address, please click the button below:
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px;text-align:left;">
+                <a href="{{ activation_link }}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#3b82f6;color:#ffffff;text-decoration:none;font-weight:700;">
+                  Activate account
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 24px 8px 24px;color:#64748b;font-size:14px;line-height:22px;">
+                If you did not create an account, please disregard this email.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 24px 24px 24px;color:#0f172a;font-size:14px;line-height:22px;">
+                Best regards,<br>
+                Your Videoflix Team
+              </td>
+            </tr>
+          </table>
+          <div style="color:#94a3b8;font-size:12px;margin-top:12px;">
+            © Videoflix • This email was sent to {{ user_email }}
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

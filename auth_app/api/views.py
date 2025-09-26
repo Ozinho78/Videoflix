@@ -1,3 +1,5 @@
+from django.utils.http import urlsafe_base64_encode  # UID kodieren
+from django.utils.encoding import force_bytes         # ID -> bytes
 from django.contrib.auth.models import User  # User model
 from django.contrib.auth.tokens import default_token_generator  # Token generator (same as in serializer)
 from django.utils.http import urlsafe_base64_encode  # Safely encode the user id for URLs
@@ -7,7 +9,8 @@ from django.core.mail import send_mail  # Simple email sending helper
 from rest_framework.views import APIView  # Base class for API views
 from rest_framework.response import Response  # HTTP response wrapper
 from rest_framework import status  # HTTP status codes
-from .serializers import RegisterSerializer  # The serializer we just created
+from auth_app.api.serializers import RegisterSerializer  # The serializer we just created
+from auth_app.emails import send_activation_email
 
 
 class RegisterView(APIView):
@@ -33,26 +36,28 @@ class RegisterView(APIView):
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))  # Encoded user id for URLs
         token = default_token_generator.make_token(user)  # Fresh activation token
 
-        # Compose an activation link. In a real app you may point this to your frontend.
-        # Fallback to localhost frontend if setting is missing.
-        frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://127.0.0.1:5500')  # Simple default
-        activation_link = f'{frontend_base}/activate.html?uid={uidb64}&token={token}'  # Query params for FE
+        # # Compose an activation link. In a real app you may point this to your frontend.
+        # # Fallback to localhost frontend if setting is missing.
+        # frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://127.0.0.1:5500')  # Simple default
+        # activation_link = f'{frontend_base}/activate.html?uid={uidb64}&token={token}'  # Query params for FE
 
-        # Prepare the email subject and body (plain text is sufficient here)
-        subject = 'Activate your Videoflix account'  # Email subject line
-        message = (
-            'Hi,\n\n'
-            'Thanks for registering at Videoflix. Please activate your account by clicking the link below:\n\n'
-            f'{activation_link}\n\n'
-            'If you did not sign up, you can ignore this email.\n'
-        )  # Simple text body with the activation link
+        # # Prepare the email subject and body (plain text is sufficient here)
+        # subject = 'Activate your Videoflix account'  # Email subject line
+        # message = (
+        #     'Hi,\n\n'
+        #     'Thanks for registering at Videoflix. Please activate your account by clicking the link below:\n\n'
+        #     f'{activation_link}\n\n'
+        #     'If you did not sign up, you can ignore this email.\n'
+        # )  # Simple text body with the activation link
 
-        # Determine sender and recipient
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@videoflix.local')  # Sender fallback
-        recipient_list = [user.email]  # Send to the registering user
+        # # Determine sender and recipient
+        # from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@videoflix.local')  # Sender fallback
+        # recipient_list = [user.email]  # Send to the registering user
 
-        # Send the activation email (works with console backend during development)
-        send_mail(subject, message, from_email, recipient_list, fail_silently=False)  # Raise on failure
+        # # Send the activation email (works with console backend during development)
+        # send_mail(subject, message, from_email, recipient_list, fail_silently=False)  # Raise on failure
+        
+        send_activation_email(user, uidb64, token)          # HTML-Mail versenden
 
         # Return the demo response shape with 201 Created
         return Response(serializer.data, status=status.HTTP_201_CREATED)  # Matches your spec
