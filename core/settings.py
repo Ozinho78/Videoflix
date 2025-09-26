@@ -62,7 +62,7 @@ MIDDLEWARE = [
 
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'exceptions.exception_handler_status500',
+    'EXCEPTION_HANDLER': 'core.utils.exceptions.exception_handler_status500',
 }
 
 
