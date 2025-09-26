@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User  # Use Django's built-in User model
 from django.contrib.auth.tokens import default_token_generator  # Token generator for activation links
 from rest_framework import serializers  # DRF serializer base classes
-from validators import (  # Import your shared validators module
+from core.utils.validators import (  # Import your shared validators module
     validate_email_format,
     validate_email_unique,
     validate_password_strength,
