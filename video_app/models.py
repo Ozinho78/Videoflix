@@ -1,9 +1,9 @@
 from django.db import models  # Base ORM types
 
 def video_upload_path(instance, filename):
-    """Build a per-object upload path like videos/<id>/<filename>."""
+    """Upload all videos directly into MEDIA_ROOT/videos/"""
     # Using id in path is nice after the instance exists; for first save it's None -> fallback.
-    return f'videos/{instance.id or "tmp"}/{filename}'
+    return f'videos/{filename}'
 
 class Video(models.Model):
     """Stores an uploaded video file and basic metadata."""

@@ -249,3 +249,11 @@ LOGGING = {
         },
     },
 }
+
+
+# Development email backend: prints emails to the console
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Dev only
+DEFAULT_FROM_EMAIL = 'no-reply@videoflix.local'  # From header for outgoing emails
+
+# Optional: where your frontend lives to build the activation link
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://127.0.0.1:5500')  # Adjust as needed
