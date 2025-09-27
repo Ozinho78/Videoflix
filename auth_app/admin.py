@@ -8,7 +8,6 @@ from django.utils.encoding import force_bytes  # Convert pk to bytes
 from django.contrib.auth.tokens import default_token_generator  # Build/validate activation tokens
 from django.utils.html import format_html  # Safe HTML rendering in admin
 from django.conf import settings  # Read settings like DEBUG / base URLs
-
 from auth_app.emails import send_activation_email  # Your HTML email helper
 from auth_app.jwt_utils import create_access_token, create_refresh_token  # NEW: JWT helpers for debug preview
 from auth_app.models import BlacklistedToken  # NEW: model that stores hashed blacklisted refresh tokens
