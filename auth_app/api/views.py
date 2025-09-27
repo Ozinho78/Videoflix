@@ -1,4 +1,5 @@
-from django.utils.http import urlsafe_base64_encode  # UID kodieren
+from django.contrib.auth import login  # To create session on successful login
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode  # UID kodieren
 from django.utils.encoding import force_bytes         # ID -> bytes
 from django.contrib.auth.models import User  # User model
 from django.contrib.auth.tokens import default_token_generator  # Token generator (same as in serializer)
@@ -9,8 +10,11 @@ from django.core.mail import send_mail  # Simple email sending helper
 from rest_framework.views import APIView  # Base class for API views
 from rest_framework.response import Response  # HTTP response wrapper
 from rest_framework import status  # HTTP status codes
-from auth_app.api.serializers import RegisterSerializer  # The serializer we just created
+from auth_app.api.serializers import RegisterSerializer, LoginSerializer    # The serializer we just created
 from auth_app.emails import send_activation_email
+import secrets  # For a simple demo token string
+from auth_app.jwt_utils import create_access_token, create_refresh_token  # Our JWT helpers
+from auth_app.jwt_utils import decode_token, create_access_token
 
 
 class RegisterView(APIView):
@@ -61,3 +65,128 @@ class RegisterView(APIView):
 
         # Return the demo response shape with 201 Created
         return Response(serializer.data, status=status.HTTP_201_CREATED)  # Matches your spec
+
+
+class ActivateView(APIView):
+    """
+    GET /api/activate/<uidb64>/<token>/
+    Activates a user account if the token matches.
+    """
+    authentication_classes = []  # Public endpoint
+    permission_classes = []  # No permissions
+
+    def get(self, request, uidb64: str, token: str, *args, **kwargs):
+        try:
+            # 1) Decode the uid from base64 to integer
+            uid = int(urlsafe_base64_decode(uidb64).decode('utf-8'))  # May raise ValueError/UnicodeError
+            # 2) Look up the user by primary key
+            user = User.objects.get(pk=uid)  # May raise DoesNotExist
+        except Exception:
+            # Return generic 400 to avoid leaking user enumeration details
+            return Response({'message': 'Activation failed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 3) Validate the token for this user
+        if not default_token_generator.check_token(user, token):
+            return Response({'message': 'Activation failed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 4) Activate the user if not already active
+        if not user.is_active:
+            user.is_active = True  # Flip active flag
+            user.save(update_fields=['is_active'])  # Persist
+
+        # 5) Return success message per spec
+        return Response({'message': 'Account successfully activated.'}, status=status.HTTP_200_OK)
+
+
+import secrets  # For a simple demo token string
+
+
+class LoginView(APIView):
+    """
+    POST /api/login/
+    Authenticates the user and sets HttpOnly JWT cookies (access + refresh).
+    Returns a demo body per spec (frontend uses HttpOnly cookies, not the body).
+    """
+    authentication_classes = []  # Public endpoint
+    permission_classes = []      # No permissions required
+
+    def post(self, request, *args, **kwargs):
+        # 1) Validate payload and authenticate
+        serializer = LoginSerializer(data=request.data)  # Bind JSON body
+        serializer.is_valid(raise_exception=True)        # 400 on invalid
+
+        # 2) Get the authenticated user (serializer.authenticate did the work)
+        user = serializer.validated_data['user']         # Authenticated user
+
+        # 3) Optionally create a Django session (not required for JWT cookies)
+        #    If you don't want a session, comment the next line.
+        login(request, user)                              # Creates a sessionid cookie (HttpOnly)
+
+        # 4) Create JWTs
+        access = create_access_token(user)               # Short-lived token
+        refresh = create_refresh_token(user)             # Longer-lived token
+
+        # 5) Set HttpOnly cookies; secure flags depend on DEBUG for local dev
+        secure = not getattr(settings, 'DEBUG', True)    # True in production
+        # Max-Age values should match your lifetimes (defaults: 15 min / 7 days)
+        access_max_age = int(getattr(settings, 'ACCESS_TOKEN_LIFETIME_MINUTES', 15)) * 60
+        refresh_max_age = int(getattr(settings, 'REFRESH_TOKEN_LIFETIME_DAYS', 7)) * 24 * 60 * 60
+
+        # 6) Shape the response per your spec
+        resp = Response(
+            {
+                'detail': 'Login successful',                 # Spec text
+                'user': {'id': user.id, 'username': user.username},  # Spec wants "username"
+            },
+            status=status.HTTP_200_OK
+        )
+
+        # 7) Attach cookies (HttpOnly, SameSite=Lax is FE-friendly; tweak as needed)
+        resp.set_cookie(
+            'access_token', access,
+            max_age=access_max_age, httponly=True, secure=secure, samesite='Lax', path='/'
+        )
+        resp.set_cookie(
+            'refresh_token', refresh,
+            max_age=refresh_max_age, httponly=True, secure=secure, samesite='Lax', path='/'
+        )
+
+        return resp  # Done
+    
+    
+class RefreshTokenView(APIView):
+    """
+    POST /api/token/refresh/
+    Reads HttpOnly refresh_token cookie, validates it, rotates the access token.
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        # 1) Get refresh cookie
+        raw = request.COOKIES.get('refresh_token')  # HttpOnly cookie
+
+        if not raw:
+            return Response({'detail': 'No refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            # 2) Decode and require type 'refresh'
+            payload = decode_token(raw, expected_type='refresh')  # Raises on invalid/expired
+            user_id = payload.get('sub')                          # Extract subject (user id)
+            user = User.objects.get(pk=user_id)                   # Ensure user exists
+        except Exception:
+            # 3) Invalid refresh -> 401
+            return Response({'detail': 'Invalid refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # 4) Issue new access token
+        access = create_access_token(user)
+        access_max_age = int(getattr(settings, 'ACCESS_TOKEN_LIFETIME_MINUTES', 15)) * 60
+        secure = not getattr(settings, 'DEBUG', True)
+
+        # 5) Return minimal info; set cookie
+        resp = Response({'detail': 'Token refreshed'}, status=status.HTTP_200_OK)
+        resp.set_cookie(
+            'access_token', access,
+            max_age=access_max_age, httponly=True, secure=secure, samesite='Lax', path='/'
+        )
+        return resp

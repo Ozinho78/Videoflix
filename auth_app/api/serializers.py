@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User  # Use Django's built-in User model
 from django.contrib.auth.tokens import default_token_generator  # Token generator for activation links
+from django.contrib.auth import authenticate  # To validate credentials in LoginSerializer
 from rest_framework import serializers  # DRF serializer base classes
 from core.utils.validators import (  # Import your shared validators module
     validate_email_format,
@@ -78,3 +79,32 @@ class RegisterSerializer(serializers.Serializer):
             },
             'token': getattr(self, '_demo_token', ''),  # Include activation token for demonstration
         }
+
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Validates login payload and returns the authenticated user in .validated_data['user'].
+    """
+    email = serializers.EmailField(write_only=True)  # Email input
+    password = serializers.CharField(write_only=True, trim_whitespace=False)  # Raw password
+
+    def validate(self, attrs):
+        # 1) Normalize + basic checks
+        email = validate_non_empty(attrs.get('email', ''), 'email')  # Non-empty email
+        validate_email_format(email)  # Basic format check
+        password = validate_non_empty(attrs.get('password', ''), 'password')  # Non-empty password
+
+        # 2) Authenticate using email as username (your users are created with username=email)
+        user = authenticate(username=email, password=password)  # None if invalid
+
+        # 3) Generic error to avoid leaking which field is wrong
+        if user is None:
+            raise serializers.ValidationError({'detail': 'Invalid credentials.'})
+
+        # 4) Block inactive accounts (must confirm email first)
+        if not user.is_active:
+            raise serializers.ValidationError({'detail': 'Account is inactive. Please activate your account.'})
+
+        # 5) Stash user for the view
+        attrs['user'] = user  # Store the user for the view
+        return attrs  # Return validated attrs
