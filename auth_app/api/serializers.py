@@ -122,3 +122,25 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         # Ensure email has a valid format
         validate_email_format(email)  # Raises if invalid format
         return email  # Return normalized value
+    
+    
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Validates the new password payload for password reset confirm.
+    """
+    # Input fields (not returned to the client)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)  # Raw new password
+    confirm_password = serializers.CharField(write_only=True, trim_whitespace=False)  # Confirmation
+
+    def validate_new_password(self, value: str) -> str:
+        # Ensure non-empty value (also trims)
+        pwd = validate_non_empty(value, 'new_password')  # Raises ValidationError if blank
+        # Enforce your password strength policy
+        validate_password_strength(pwd)  # Raises ValidationError if weak
+        return pwd  # Return the validated password
+
+    def validate(self, attrs):
+        # Check that both password fields match
+        if attrs.get('new_password') != attrs.get('confirm_password'):
+            raise serializers.ValidationError({'confirm_password': 'Passwords do not match.'})  # Field error
+        return attrs  # Return validated data unchanged

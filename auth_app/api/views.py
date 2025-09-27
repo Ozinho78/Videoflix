@@ -10,7 +10,7 @@ from django.core.mail import send_mail  # Simple email sending helper
 from rest_framework.views import APIView  # Base class for API views
 from rest_framework.response import Response  # HTTP response wrapper
 from rest_framework import status  # HTTP status codes
-from auth_app.api.serializers import RegisterSerializer, LoginSerializer, PasswordResetRequestSerializer      # The serializer we just created
+from auth_app.api.serializers import RegisterSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer  # Our serializers
 from auth_app.emails import send_activation_email, send_password_reset_email  # Email helper functions
 import secrets  # For a simple demo token string
 from auth_app.jwt_utils import create_access_token, create_refresh_token  # Our JWT helpers
@@ -269,3 +269,48 @@ class PasswordResetRequestView(APIView):
             {'detail': 'An email has been sent to reset your password.'},
             status=status.HTTP_200_OK
         )
+        
+        
+class PasswordResetConfirmView(APIView):
+    """
+    POST /api/password_confirm/<uidb64>/<token>/
+    Validates token + uid and sets the new password on success.
+    """
+    authentication_classes = []  # Public endpoint; no auth required
+    permission_classes = []  # No permissions
+
+    def post(self, request, uidb64: str, token: str, *args, **kwargs):
+        # 1) Decode uidb64 into integer user id
+        try:
+            uid = int(urlsafe_base64_decode(uidb64).decode('utf-8'))  # May raise ValueError/UnicodeError
+        except Exception:
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)  # Bad link
+
+        # 2) Look up the user
+        try:
+            user = User.objects.get(pk=uid)  # Raises DoesNotExist if not found
+        except User.DoesNotExist:
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)  # No user
+
+        # 3) Validate the token against this user
+        if not default_token_generator.check_token(user, token):  # False if invalid/expired
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)  # Bad token
+
+        # 4) Validate the posted passwords with our serializer
+        serializer = PasswordResetConfirmSerializer(data=request.data)  # Bind input data
+        serializer.is_valid(raise_exception=True)  # 400 with error details on failure
+
+        # 5) Set the new password and persist
+        new_password = serializer.validated_data['new_password']  # Extract validated password
+        user.set_password(new_password)  # Hash and set password
+        user.save(update_fields=['password'])  # Save only the changed field
+
+        # 6) (Optional) You could delete auth cookies here for safety; spec does not require it.
+        # resp = Response({'detail': 'Your Password has been successfully reset.'}, status=status.HTTP_200_OK)
+        # resp.delete_cookie('access_token', path='/')
+        # resp.delete_cookie('refresh_token', path='/')
+        # return resp
+
+        # 7) Spec-compliant success response
+        return Response({'detail': 'Your Password has been successfully reset.'}, status=status.HTTP_200_OK)
+    
