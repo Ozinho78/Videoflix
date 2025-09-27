@@ -14,7 +14,8 @@ from auth_app.api.serializers import RegisterSerializer, LoginSerializer    # Th
 from auth_app.emails import send_activation_email
 import secrets  # For a simple demo token string
 from auth_app.jwt_utils import create_access_token, create_refresh_token  # Our JWT helpers
-from auth_app.jwt_utils import decode_token, create_access_token
+from auth_app.jwt_utils import decode_token, create_access_token, _hash  # JWT helpers and token hashing
+from auth_app.models import BlacklistedToken  # Persist blacklisted refresh tokens
 
 
 class RegisterView(APIView):
@@ -163,30 +164,74 @@ class RefreshTokenView(APIView):
     permission_classes = []
 
     def post(self, request, *args, **kwargs):
-        # 1) Get refresh cookie
-        raw = request.COOKIES.get('refresh_token')  # HttpOnly cookie
-
+        # 1) Get refresh cookie (required by spec)
+        raw = request.COOKIES.get('refresh_token')  # HttpOnly cookie with refresh token
         if not raw:
-            return Response({'detail': 'No refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+            # Spec: 400 when refresh token is missing
+            return Response({'detail': 'Refresh token missing.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 2) Decode and require type 'refresh'
-            payload = decode_token(raw, expected_type='refresh')  # Raises on invalid/expired
-            user_id = payload.get('sub')                          # Extract subject (user id)
+            # 2) Decode and require type 'refresh' (raises if invalid/expired/wrong type)
+            payload = decode_token(raw, expected_type='refresh')  # Validates signature and exp
+            user_id = payload.get('sub')                          # User id from token
             user = User.objects.get(pk=user_id)                   # Ensure user exists
         except Exception:
-            # 3) Invalid refresh -> 401
+            # Spec: 401 when refresh token is invalid
             return Response({'detail': 'Invalid refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # 4) Issue new access token
-        access = create_access_token(user)
-        access_max_age = int(getattr(settings, 'ACCESS_TOKEN_LIFETIME_MINUTES', 15)) * 60
-        secure = not getattr(settings, 'DEBUG', True)
+        # 3) Issue a new short-lived access token
+        access = create_access_token(user)  # Fresh access JWT
 
-        # 5) Return minimal info; set cookie
-        resp = Response({'detail': 'Token refreshed'}, status=status.HTTP_200_OK)
+        # 4) Set cookie attributes (keep consistent with your login view)
+        access_max_age = int(getattr(settings, 'ACCESS_TOKEN_LIFETIME_MINUTES', 15)) * 60  # seconds
+        secure = not getattr(settings, 'DEBUG', True)  # Secure only in production
+
+        # 5) Build response per spec: include 'access' in body for demo
+        resp = Response({'detail': 'Token refreshed', 'access': access}, status=status.HTTP_200_OK)
+
+        # 6) Also set the new access token as HttpOnly cookie
         resp.set_cookie(
             'access_token', access,
             max_age=access_max_age, httponly=True, secure=secure, samesite='Lax', path='/'
         )
+        return resp
+
+
+class LogoutView(APIView):
+    """
+    POST /api/logout/
+    Invalidates the refresh token (blacklist), deletes auth cookies, returns a spec-compliant message.
+    """
+    authentication_classes = []  # Public endpoint; relies on refresh cookie presence
+    permission_classes = []      # No permissions required
+
+    def post(self, request, *args, **kwargs):
+        # 1) Require the refresh cookie as per spec
+        raw = request.COOKIES.get('refresh_token')  # Read the HttpOnly refresh token
+        if not raw:
+            return Response({'detail': 'Refresh token missing.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2) Try to link the blacklist entry to a user (best-effort)
+        user = None  # Default if we cannot decode
+        try:
+            payload = decode_token(raw, expected_type='refresh')  # May raise on invalid/expired/blacklisted
+            user_id = payload.get('sub')
+            user = User.objects.filter(pk=user_id).first()
+        except Exception:
+            # Even if decoding fails, we still blacklist by raw token hash to be safe
+            pass
+
+        # 3) Blacklist the (hashed) refresh token; idempotent via get_or_create
+        BlacklistedToken.objects.get_or_create(token_hash=_hash(raw), defaults={'user': user})
+
+        # 4) Build the response and delete cookies (access, refresh, session)
+        resp = Response(
+            {'detail': 'Logout successful! All tokens will be deleted. Refresh token is now invalid.'},
+            status=status.HTTP_200_OK
+        )
+        # Delete cookies by setting them to empty with Max-Age=0 (browser removes them)
+        resp.delete_cookie('access_token', path='/')
+        resp.delete_cookie('refresh_token', path='/')
+        resp.delete_cookie('sessionid', path='/')  # Optional: if you created a Django session on login
+
         return resp
