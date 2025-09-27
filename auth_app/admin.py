@@ -50,6 +50,8 @@ class UserAdmin(BaseUserAdmin):
         'activation_badge',   # Colored badge
         'activation_token',   # Activation token (for inactive users)
         'activation_link',    # Activation link (for inactive users)
+        'password_reset_token',
+        'password_reset_link',
     )
 
     # Inline: show blacklisted refresh tokens for this user
@@ -61,9 +63,13 @@ class UserAdmin(BaseUserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Activation', {  # Existing activation area
+        ('Activation', {
             'classes': ('collapse',),
             'fields': ('activation_badge', 'activation_token', 'activation_link'),
+        }),
+        ('Password reset', {
+        'classes': ('collapse',),
+        'fields': ('password_reset_token', 'password_reset_link'),
         }),
     )
 
@@ -192,6 +198,40 @@ class UserAdmin(BaseUserAdmin):
                 self.message_user(request, f'Failed to send activation to {user.email}: {exc}', level=messages.ERROR)
         if sent:
             self.message_user(request, f'Sent {sent} activation email(s).', level=messages.SUCCESS)
+            
+
+    def password_reset_token(self, obj):
+        '''Show a fresh password reset token (debug/support).'''
+        if not obj.is_active:
+            return 'Activate the account first'
+        # Build a fresh token (matches default_token_generator used in email)
+        return default_token_generator.make_token(obj)
+    password_reset_token.short_description = 'Password reset token'
+
+    def password_reset_link(self, obj):
+        '''Clickable backend link to /api/password_confirm/<uidb64>/<token>/.'''
+        if not obj.is_active:
+            return 'Activate the account first'
+        uidb64 = urlsafe_base64_encode(force_bytes(obj.pk))
+        token = default_token_generator.make_token(obj)
+
+        # Build an absolute or root-absolute backend URL
+        base = getattr(settings, 'BACKEND_BASE_URL', '')
+        url = f'{base}/api/password_confirm/{uidb64}/{token}/' if base else f'/api/password_confirm/{uidb64}/{token}/'
+
+        # Render copy-friendly input + CTA
+        return format_html(
+            '<div style="max-width:100%;">'
+            '<input type="text" readonly value="{}" '
+            'style="width:100%;padding:6px 8px;font-family:monospace;border:1px solid #e2e8f0;'
+            'border-radius:8px;background:#f8fafc;margin-bottom:8px;" />'
+            '<a href="{}" target="_blank" rel="noopener" '
+            'style="display:inline-block;padding:6px 10px;border-radius:8px;'
+            'background:#3b82f6;color:#fff;text-decoration:none;font-weight:600;">Open reset link</a>'
+            '</div>',
+            url, url
+        )
+    password_reset_link.short_description = 'Password reset link'    
 
 
 # Swap in our customized admin for the built-in User model
