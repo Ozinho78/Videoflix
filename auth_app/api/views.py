@@ -10,8 +10,8 @@ from django.core.mail import send_mail  # Simple email sending helper
 from rest_framework.views import APIView  # Base class for API views
 from rest_framework.response import Response  # HTTP response wrapper
 from rest_framework import status  # HTTP status codes
-from auth_app.api.serializers import RegisterSerializer, LoginSerializer    # The serializer we just created
-from auth_app.emails import send_activation_email
+from auth_app.api.serializers import RegisterSerializer, LoginSerializer, PasswordResetRequestSerializer      # The serializer we just created
+from auth_app.emails import send_activation_email, send_password_reset_email  # Email helper functions
 import secrets  # For a simple demo token string
 from auth_app.jwt_utils import create_access_token, create_refresh_token  # Our JWT helpers
 from auth_app.jwt_utils import decode_token, create_access_token, _hash  # JWT helpers and token hashing
@@ -235,3 +235,37 @@ class LogoutView(APIView):
         resp.delete_cookie('sessionid', path='/')  # Optional: if you created a Django session on login
 
         return resp
+    
+    
+class PasswordResetRequestView(APIView):
+    """
+    POST /api/password_reset/
+    If the email exists, send a password-reset email. Always return 200 with a generic message.
+    """
+    authentication_classes = []  # Public endpoint
+    permission_classes = []  # No permissions required
+
+    def post(self, request, *args, **kwargs):
+        # Bind and validate incoming JSON
+        serializer = PasswordResetRequestSerializer(data=request.data)  # Attach data
+        serializer.is_valid(raise_exception=True)  # 400 on invalid email format
+
+        # Extract the normalized email
+        email = serializer.validated_data['email']  # Validated email
+
+        # Find a user case-insensitively (username mirrors email in your setup)
+        user = User.objects.filter(email__iexact=email).first()  # None if not found
+
+        # Only send a reset email if the user actually exists
+        if user:
+            # Build uid and token for the reset link
+            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))  # Encoded user id
+            token = default_token_generator.make_token(user)  # One-time token
+            # Send HTML + text email
+            send_password_reset_email(user, uidb64, token)  # Fire and forget (sync in dev)
+
+        # Always return the same success message (no user enumeration)
+        return Response(
+            {'detail': 'An email has been sent to reset your password.'},
+            status=status.HTTP_200_OK
+        )

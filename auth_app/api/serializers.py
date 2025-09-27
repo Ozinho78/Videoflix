@@ -108,3 +108,17 @@ class LoginSerializer(serializers.Serializer):
         # 5) Stash user for the view
         attrs['user'] = user  # Store the user for the view
         return attrs  # Return validated attrs
+    
+    
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """
+    Validates the password-reset request payload.
+    """
+    email = serializers.EmailField(write_only=True)  # Only input, not returned
+
+    def validate_email(self, value: str) -> str:
+        # Ensure non-empty trimmed email
+        email = validate_non_empty(value, 'email')  # Raises if blank
+        # Ensure email has a valid format
+        validate_email_format(email)  # Raises if invalid format
+        return email  # Return normalized value
