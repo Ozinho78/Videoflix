@@ -1,22 +1,17 @@
-from django.contrib import admin               # Admin site utilities
-from .models import Video                      # Import the Video model to register it
+# video_app/admin.py
+from django.contrib import admin
+from video_app.models import Video
 
-@admin.register(Video)                         # Register model via decorator
+@admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
     """Admin configuration for Video model."""
-    # Columns in change list
-    list_display = ('id', 'title', 'created_at', 'updated_at')
-    # Enable simple search
-    search_fields = ('title', 'description')
-    # Sidebar filter
-    list_filter = ('created_at',)
-    # Default ordering
+    list_display = ('id', 'title', 'category', 'created_at', 'updated_at')  # jetzt mit category
+    search_fields = ('title', 'description', 'category')
+    list_filter = ('created_at', 'category')
     ordering = ('-created_at',)
-    # Fields layout (optional; keeps form tidy)
     fieldsets = (
-        ('Primary Info', {'fields': ('title', 'description')}),
+        ('Primary Info', {'fields': ('title', 'description', 'category')}),  # category ergänzt
         ('File', {'fields': ('file',)}),
         ('Timestamps', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
-    # Make timestamps read-only in admin form
     readonly_fields = ('created_at', 'updated_at')
