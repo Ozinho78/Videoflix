@@ -28,3 +28,11 @@ def transcode_to_hls(video_id: int, input_path: str):
             "-f", "hls", "-hls_time", "4", "-hls_playlist_type", "vod", out_path
         ]
         subprocess.run(cmd, check=True)
+
+
+
+# import subprocess
+# def convert720p(source):
+# new_file_name = # TODO - Alter name + _720p.mp4
+# cmd = 'ffmpeg -i "{}" -s hd720 -c:v libx264 -crf 23 -c:a aac -strict -2 "{}"'.format(source, new_file)
+# run = subprocess.run(cmd, capture_output=True)
