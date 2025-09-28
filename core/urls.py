@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/', include('auth_app.api.urls')),  # /api/... auth endpoints
     path('api/', include('video_app.api.urls')), # /api/... video endpoints
     path('api-auth/', include('rest_framework.urls')),  # DRF browser login
+    path('django-rq/', include('django_rq.urls')),  # RQ monitoring
 ]
 
 # Important: static() only returns patterns if settings.DEBUG is True.
