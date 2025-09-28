@@ -11,6 +11,12 @@ class Video(models.Model):
     title = models.CharField(max_length=200, help_text='Short display title')
     # Optional description field
     description = models.TextField(blank=True, help_text='Optional description')
+    category = models.CharField(
+        max_length=100,
+        help_text='Category/genre of the video',
+        blank=True,
+        null=True
+    )
     # Raw uploaded file (you can later create HLS renditions via RQ/Celery)
     file = models.FileField(upload_to=video_upload_path, help_text='Upload the original video file')
     # Timestamps for ordering/filtering

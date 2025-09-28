@@ -63,6 +63,9 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'core.utils.exceptions.exception_handler_status500',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Use JWT only
+    ),
 }
 
 
