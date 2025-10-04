@@ -103,6 +103,7 @@ pytest.ini
 **/tests/
 *.ini
 **/media/
+**/media_backup/
 **/management/
 
 .github/*
