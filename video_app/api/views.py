@@ -25,6 +25,7 @@ class VideoStreamView(APIView):
     Requires JWT authentication.
     """
     permission_classes = [IsAuthenticated]
+    # permission_classes = [permissions.AllowAny]
 
     def get(self, request, movie_id: int, resolution: str, *args, **kwargs):
         # 1) Get the video object by ID
