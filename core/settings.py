@@ -54,7 +54,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # <-- Add this line before CommonMiddleware
+    'corsheaders.middleware.CorsMiddleware',  # this line before CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -69,16 +69,18 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-# Optional: wenn du Cookies/JWTs im Browser speichern willst
+# Optional: save Cookies/JWTs in browser
 CORS_ALLOW_CREDENTIALS = True
 
-# Wenn du während der Entwicklung alle erlauben willst:
+# To allow everything (not recommended for production)
 # CORS_ALLOW_ALL_ORIGINS = True
 
+# If you need to allow specific headers (e.g., for JWT)
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5500',
     'http://localhost:5500',
 ]
+
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'core.utils.exceptions.exception_handler_status500',
