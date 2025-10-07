@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'django_rq',
     'rest_framework',
     'auth_app',
@@ -53,6 +54,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # <-- Add this line before CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -60,6 +62,23 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Allow frontend to access backend
+CORS_ALLOWED_ORIGINS = [
+    'http://127.0.0.1:5500',  # Frontend
+    'http://localhost:5500',
+]
+
+
+# Optional: wenn du Cookies/JWTs im Browser speichern willst
+CORS_ALLOW_CREDENTIALS = True
+
+# Wenn du während der Entwicklung alle erlauben willst:
+# CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:5500',
+    'http://localhost:5500',
+]
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'core.utils.exceptions.exception_handler_status500',
