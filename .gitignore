@@ -101,7 +101,7 @@ pytest.ini
 .coverage
 .coveragerc.ini
 
-**/tests/
+# **/tests/
 *.ini
 **/media/
 **/media_backup/
