@@ -94,6 +94,7 @@ log/*
 logs/*
 !logs/.gitkeep
 .pytest_cache/
+log.txt
 
 helper/
 pytest.ini

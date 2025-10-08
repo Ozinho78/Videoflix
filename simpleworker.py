@@ -1,10 +1,8 @@
-# Falls bei Windows der Windows RQ Worker nicht funktioniert:
-# 1. Erstelle eine Python Datei names 'simpleworker.py' mit:
-
 from rq import Worker
 
 
 class BaseDeathPenalty(object):
+    """A death penalty that does nothing. Used for testing"""
     def __init__(self, *args, **kwargs):
         pass
 
@@ -16,6 +14,7 @@ class BaseDeathPenalty(object):
 
 
 class SimpleWorker(Worker):
+    """A worker that does not fork, and runs jobs in the same thread/process"""
     death_penalty_class = BaseDeathPenalty
 
     def main_work_horse(self, *args, **kwargs):
@@ -24,6 +23,3 @@ class SimpleWorker(Worker):
     def execute_job(self, *args, **kwargs):
         """Execute job in same thread/process, do not fork()"""
         return self.perform_job(*args, **kwargs)
-        
-# 2. Starte den RQ Worker mit diesem Behfehl im Terminal:
-# python manage.py rqworker --worker-class simpleworker.py default
