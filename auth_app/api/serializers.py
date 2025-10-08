@@ -1,8 +1,8 @@
-from django.contrib.auth.models import User  # Use Django's built-in User model
-from django.contrib.auth.tokens import default_token_generator  # Token generator for activation links
-from django.contrib.auth import authenticate  # To validate credentials in LoginSerializer
-from rest_framework import serializers  # DRF serializer base classes
-from core.utils.validators import (  # Import your shared validators module
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import authenticate
+from rest_framework import serializers
+from core.utils.validators import (
     validate_email_format,
     validate_email_unique,
     validate_password_strength,
@@ -11,136 +11,102 @@ from core.utils.validators import (  # Import your shared validators module
 
 
 class RegisterSerializer(serializers.Serializer):
-    """
-    Serializer that validates registration input and creates an inactive user.
-    """
-    # Public input fields
-    email = serializers.EmailField(write_only=True)  # E-Mail provided by the user
-    password = serializers.CharField(write_only=True, trim_whitespace=False)  # Raw password
-    confirmed_password = serializers.CharField(write_only=True, trim_whitespace=False)  # Confirmation
-
-    # Output-only fields for the demo response
-    id = serializers.IntegerField(read_only=True)  # ID of the created user
-    token = serializers.CharField(read_only=True)  # Activation token for demonstration
+    """Serializer that validates registration input and creates an inactive user"""
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+    confirmed_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    id = serializers.IntegerField(read_only=True)
+    token = serializers.CharField(read_only=True)
 
     def validate_email(self, value: str) -> str:
-        # Ensure email is non-empty and trimmed
-        email = validate_non_empty(value, 'email')  # Raises ValidationError if blank
-        # Check email format
-        validate_email_format(email)  # Raises ValidationError if invalid
-        # Ensure uniqueness (case-insensitive)
-        validate_email_unique(email)  # Raises ValidationError if taken
-        return email  # Return normalized/trimmed email
+        """Validates that the email is non-empty, properly formatted, and unique"""
+        email = validate_non_empty(value, 'email')
+        validate_email_format(email)
+        validate_email_unique(email)
+        return email  
 
     def validate_password(self, value: str) -> str:
-        # Basic non-empty check (and strip) to be safe
-        pwd = validate_non_empty(value, 'password')  # Raises if blank
-        # Validate strength according to your rules
-        validate_password_strength(pwd)  # Raises if weak
-        return pwd  # Return the validated password
+        """Validates that the password is non-empty and meets strength requirements"""        
+        pwd = validate_non_empty(value, 'password')
+        validate_password_strength(pwd)
+        return pwd  
 
     def validate(self, attrs):
-        # Ensure password and confirmed_password match
+        """Validates that password and confirmed_password match"""
         if attrs.get('password') != attrs.get('confirmed_password'):
-            raise serializers.ValidationError({'confirmed_password': 'Passwords do not match.'})  # Field-level error
-        return attrs  # Return the full, validated attribute dict
+            raise serializers.ValidationError({'confirmed_password': 'Passwords do not match.'})
+        return attrs  
 
     def create(self, validated_data):
-        # Pull out validated fields
-        email = validated_data['email']  # Already validated
-        password = validated_data['password']  # Already validated
-
-        # Use email as username to satisfy Django's default User model (username is required)
-        username = email  # Simple strategy: mirror email into username
-
-        # Create the inactive user
-        user = User.objects.create_user(  # create_user handles password hashing
-            username=username,  # Username (using email)
-            email=email,  # Store email
-            password=password,  # Raw password is hashed internally
-            is_active=False  # Keep the account inactive until email activation
+        """Creates an inactive user and generates an activation token"""
+        email = validated_data['email']
+        password = validated_data['password']
+        username = email
+        user = User.objects.create_user(
+            username=username,  
+            email=email,
+            password=password,
+            is_active=False  
         )
-
-        # Generate a one-time activation token using Django's default token generator
-        token = default_token_generator.make_token(user)  # Token tied to user state
-
-        # Attach output-only fields into serializer instance data for response
-        self._demo_token = token  # Store token for use in to_representation
-        self._created_user = user  # Keep reference for output fields
-
-        return user  # DRF expects the created instance
+        token = default_token_generator.make_token(user)  
+        self._demo_token = token  
+        self._created_user = user  
+        return user  
 
     def to_representation(self, instance):
-        # Build the demo response payload exactly as specified
+        """Custom representation to include user id, email, and activation token"""        
         return {
             'user': {
-                'id': instance.id,  # Database ID of the new user
-                'email': instance.email,  # Echo the email
+                'id': instance.id,  
+                'email': instance.email,  
             },
-            'token': getattr(self, '_demo_token', ''),  # Include activation token for demonstration
+            'token': getattr(self, '_demo_token', ''),  
         }
 
 
 class LoginSerializer(serializers.Serializer):
-    """
-    Validates login payload and returns the authenticated user in .validated_data['user'].
-    """
-    email = serializers.EmailField(write_only=True)  # Email input
-    password = serializers.CharField(write_only=True, trim_whitespace=False)  # Raw password
+    """Validates login payload and returns the authenticated user in .validated_data['user']"""
+    email = serializers.EmailField(write_only=True)  
+    password = serializers.CharField(write_only=True, trim_whitespace=False)  
 
     def validate(self, attrs):
-        # 1) Normalize + basic checks
-        email = validate_non_empty(attrs.get('email', ''), 'email')  # Non-empty email
-        validate_email_format(email)  # Basic format check
-        password = validate_non_empty(attrs.get('password', ''), 'password')  # Non-empty password
-
-        # 2) Authenticate using email as username (your users are created with username=email)
-        user = authenticate(username=email, password=password)  # None if invalid
-
-        # 3) Generic error to avoid leaking which field is wrong
+        """Validates credentials and authenticates the user"""
+        email = validate_non_empty(attrs.get('email', ''), 'email')  
+        validate_email_format(email)  
+        password = validate_non_empty(attrs.get('password', ''), 'password')  
+        user = authenticate(username=email, password=password)  
         if user is None:
             raise serializers.ValidationError({'detail': 'Invalid credentials.'})
-
-        # 4) Block inactive accounts (must confirm email first)
         if not user.is_active:
             raise serializers.ValidationError({'detail': 'Account is inactive. Please activate your account.'})
-
-        # 5) Stash user for the view
-        attrs['user'] = user  # Store the user for the view
-        return attrs  # Return validated attrs
+        attrs['user'] = user  
+        return attrs  
     
     
 class PasswordResetRequestSerializer(serializers.Serializer):
-    """
-    Validates the password-reset request payload.
-    """
-    email = serializers.EmailField(write_only=True)  # Only input, not returned
+    """Validates the password-reset request payload"""
+    email = serializers.EmailField(write_only=True)  
 
     def validate_email(self, value: str) -> str:
-        # Ensure non-empty trimmed email
-        email = validate_non_empty(value, 'email')  # Raises if blank
-        # Ensure email has a valid format
-        validate_email_format(email)  # Raises if invalid format
-        return email  # Return normalized value
+        """Validates that the email is non-empty and properly formatted"""
+        email = validate_non_empty(value, 'email')  
+        validate_email_format(email)  
+        return email  
     
     
 class PasswordResetConfirmSerializer(serializers.Serializer):
-    """
-    Validates the new password payload for password reset confirm.
-    """
-    # Input fields (not returned to the client)
-    new_password = serializers.CharField(write_only=True, trim_whitespace=False)  # Raw new password
-    confirm_password = serializers.CharField(write_only=True, trim_whitespace=False)  # Confirmation
+    """Validates the new password payload for password reset confirm"""
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)  
+    confirm_password = serializers.CharField(write_only=True, trim_whitespace=False)  
 
     def validate_new_password(self, value: str) -> str:
-        # Ensure non-empty value (also trims)
-        pwd = validate_non_empty(value, 'new_password')  # Raises ValidationError if blank
-        # Enforce your password strength policy
-        validate_password_strength(pwd)  # Raises ValidationError if weak
-        return pwd  # Return the validated password
+        """Validates that the new password is non-empty and meets strength requirements""" 
+        pwd = validate_non_empty(value, 'new_password')  
+        validate_password_strength(pwd)  
+        return pwd  
 
     def validate(self, attrs):
-        # Check that both password fields match
+        """Validates that new_password and confirm_password match"""
         if attrs.get('new_password') != attrs.get('confirm_password'):
-            raise serializers.ValidationError({'confirm_password': 'Passwords do not match.'})  # Field error
-        return attrs  # Return validated data unchanged
+            raise serializers.ValidationError({'confirm_password': 'Passwords do not match.'})  
+        return attrs  
