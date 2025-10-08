@@ -16,24 +16,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', default='django-insecure-@#x5h3zj!g+8g1v@2^b6^9$8&f1r7g$@t3v!p4#=g0r5qzj4m3')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", default="localhost").split(",")
 CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", default="http://localhost:4200").split(",")
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -47,14 +34,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'auth_app',
     'video_app.apps.VideoAppConfig',
-    # 'video_app',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # this line before CommonMiddleware
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -62,20 +48,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# Allow frontend to access backend
 CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:5500',  # Frontend
+    'http://127.0.0.1:5500',
     'http://localhost:5500',
 ]
 
 
-# Optional: save Cookies/JWTs in browser
+
 CORS_ALLOW_CREDENTIALS = True
-
-# To allow everything (not recommended for production)
-# CORS_ALLOW_ALL_ORIGINS = True
-
-# If you need to allow specific headers (e.g., for JWT)
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5500',
     'http://localhost:5500',
@@ -88,7 +68,6 @@ REST_FRAMEWORK = {
         'auth_app.authentication.CookieJWTAuthentication',
     ),
 }
-
 
 ROOT_URLCONF = 'core.urls'
 
@@ -109,10 +88,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -124,7 +99,6 @@ DATABASES = {
     }
 }
 
-# Füge die Konfiguration für Redis und RQ hinzu
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -146,10 +120,6 @@ RQ_QUEUES = {
     },
 }
 
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -165,23 +135,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-# Ändere und Erweitere die Konfiguration für static und media Dateien
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "static"
 
@@ -190,52 +148,44 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# --- Logging configuration ----------------------------------------------------
-# This LOGGING dict enables console logging in development (DEBUG=True)
-# and also writes rotating log files for later inspection.
-
-LOG_LEVEL = 'DEBUG' if DEBUG else 'INFO'  # Choose a higher level in production
+LOG_LEVEL = 'DEBUG' if DEBUG else 'INFO'
 
 LOGGING = {
-    'version': 1,  # DictConfig schema version
-    'disable_existing_loggers': False,  # Keep Django's default loggers
+    'version': 1,
+    'disable_existing_loggers': False,
     'filters': {
-        'require_debug_true': {  # Filter that only passes when DEBUG=True
+        'require_debug_true': {
             '()': 'django.utils.log.RequireDebugTrue',
         },
     },
     'formatters': {
-        'verbose': {  # Detailed format incl. module and process/thread IDs
+        'verbose': {
             'format': '[{levelname}] {asctime} {name} | {message}',
             'style': '{',
         },
-        'simple': {  # Shorter format for console
+        'simple': {
             'format': '[{levelname}] {name}: {message}',
             'style': '{',
         },
     },
     'handlers': {
-        'console': {  # Print logs to stdout (shown in Docker logs too)
+        'console': {
             'level': LOG_LEVEL,
             'class': 'logging.StreamHandler',
-            'filters': ['require_debug_true'],  # Only spam console in dev
+            'filters': ['require_debug_true'],
             'formatter': 'simple',
         },
-        'file_app': {  # Rotating file handler for app-level logs
+        'file_app': {
             'level': LOG_LEVEL,
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(BASE_DIR / 'logs' / 'app.log'),  # Ensure folder exists
-            'maxBytes': 1024 * 1024 * 5,  # ~5MB per file
-            'backupCount': 3,  # Keep last 3 rotations
+            'filename': str(BASE_DIR / 'logs' / 'app.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 3,
             'formatter': 'verbose',
         },
-        'file_django': {  # Separate file for Django internals if desired
+        'file_django': {
             'level': LOG_LEVEL,
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': str(BASE_DIR / 'logs' / 'django.log'),
@@ -245,27 +195,25 @@ LOGGING = {
         },
     },
     'loggers': {
-        '': {  # Root logger catches everything not matched below
+        '': {
             'handlers': ['console', 'file_app'],
             'level': LOG_LEVEL,
         },
-        'django': {  # Core Django logs (security, requests, etc.)
+        'django': {
             'handlers': ['console', 'file_django'],
             'level': LOG_LEVEL,
-            'propagate': False,  # Don't bubble to root to avoid duplicates
+            'propagate': False,
         },
-        'django.request': {  # 4xx/5xx request errors
+        'django.request': {
             'handlers': ['console', 'file_django'],
             'level': 'WARNING',
             'propagate': False,
         },
-        'django.db.backends': {  # SQL queries (use DEBUG level here)
+        'django.db.backends': {
             'handlers': ['console', 'file_django'],
             'level': 'DEBUG' if DEBUG else 'WARNING',
             'propagate': False,
         },
-        # Your own modules (e.g., exceptions.py uses getLogger(__name__))
-        # Example: logger name 'core' or per-app like 'videos', 'accounts', etc.
         'core': {
             'handlers': ['console', 'file_app'],
             'level': LOG_LEVEL,
@@ -274,11 +222,8 @@ LOGGING = {
     },
 }
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'no-reply@videoflix.local'
 
-# Development email backend: prints emails to the console
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Dev only
-DEFAULT_FROM_EMAIL = 'no-reply@videoflix.local'  # From header for outgoing emails
 
-# Optional: where your frontend lives to build the activation link
-# FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://127.0.0.1:5500')  # Adjust as needed
-FRONTEND_BASE_URL="http://127.0.0.1:8000/api" # temporär für Backend-Only Lösung
+FRONTEND_BASE_URL="http://127.0.0.1:8000/api"

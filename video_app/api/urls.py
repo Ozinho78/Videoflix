@@ -1,3 +1,4 @@
+"""Endpoints for video app"""
 from django.urls import path
 from video_app.api.views import VideoListView, VideoStreamView, VideoSegmentView
 
