@@ -118,14 +118,13 @@ docker push ozinho78/videoflix-backend:latest
 ```
 
 ### Example Endpoints
- - Method	  Endpoint    	                                Description
  - POST	  /api/register/	                                Register new user
  - POST	  /api/login/	                                    Login with JWT
  - POST	  /api/logout/	                                  Logout user
  - POST	  /api/password_reset/	                          Send password reset link
  - POST	  /api/password_confirm/<uidb64>/<token>/	        Confirm new password
- - GET	    /api/video/<movie_id>/<resolution>/index.m3u8	  Get video playlist
- - GET	    /api/video/<movie_id>/<resolution>/<segment>/	  Get TS segment
+ - GET	  /api/video/<movie_id>/<resolution>/index.m3u8	  Get video playlist
+ - GET	  /api/video/<movie_id>/<resolution>/<segment>/	  Get TS segment
 
 
 ### 🧰 Common Docker Commands
