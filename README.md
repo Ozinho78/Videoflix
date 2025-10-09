@@ -118,14 +118,14 @@ docker push ozinho78/videoflix-backend:latest
 ```
 
 ### Example Endpoints
-Method	  Endpoint    	                                Description
-POST	  /api/register/	                                Register new user
-POST	  /api/login/	                                    Login with JWT
-POST	  /api/logout/	                                  Logout user
-POST	  /api/password_reset/	                          Send password reset link
-POST	  /api/password_confirm/<uidb64>/<token>/	        Confirm new password
-GET	    /api/video/<movie_id>/<resolution>/index.m3u8	  Get video playlist
-GET	    /api/video/<movie_id>/<resolution>/<segment>/	  Get TS segment
+ - Method	  Endpoint    	                                Description
+ - POST	  /api/register/	                                Register new user
+ - POST	  /api/login/	                                    Login with JWT
+ - POST	  /api/logout/	                                  Logout user
+ - POST	  /api/password_reset/	                          Send password reset link
+ - POST	  /api/password_confirm/<uidb64>/<token>/	        Confirm new password
+ - GET	    /api/video/<movie_id>/<resolution>/index.m3u8	  Get video playlist
+ - GET	    /api/video/<movie_id>/<resolution>/<segment>/	  Get TS segment
 
 
 ### 🧰 Common Docker Commands
@@ -164,11 +164,13 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configure SQLite in .env
+```bash
 DEBUG=True
 SECRET_KEY=your_local_secret
 DB_NAME=db.sqlite3
 ALLOWED_HOSTS=127.0.0.1,localhost
 CSRF_TRUSTED_ORIGINS=http://127.0.0.1:5500
+```
 
 ### 4. Apply migrations and create superuser
 ```bash
