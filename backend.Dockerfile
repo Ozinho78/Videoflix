@@ -17,6 +17,14 @@ RUN apk update && \
     apk del .build-deps && \
     chmod +x backend.entrypoint.sh
 
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+RUN mkdir -p /app/logs && chmod -R 777 /app/logs
+
+COPY ./backend.entrypoint.sh ./backend.entrypoint.sh
+RUN dos2unix ./backend.entrypoint.sh || true
+RUN chmod +x ./backend.entrypoint.sh
+
 EXPOSE 8000
 
-ENTRYPOINT [ "./backend.entrypoint.sh" ]
+ENTRYPOINT ["./backend.entrypoint.sh"]

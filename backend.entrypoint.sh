@@ -13,6 +13,9 @@ done
 
 echo "PostgreSQL ist bereit - fahre fort..."
 
+mkdir -p /app/logs
+chmod -R 777 /app/logs
+
 python manage.py collectstatic --noinput
 python manage.py makemigrations
 python manage.py migrate
