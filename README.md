@@ -43,6 +43,16 @@ The backend provides a REST API for a VanillaJS frontend and runs completely ins
 
 -------------------------------------------------------------------------------------------------------------
 
+## ⚡️ Quickstart (for Windows, macOS, or Linux)
+
+### ✅ Requirements
+Before starting, make sure you have:
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and **running**
+- Git installed (`git --version`)
+- Internet connection (for first-time Docker image downloads)
+
+---
+
 ## Installation
 
 ## 🐳 Run with Docker
