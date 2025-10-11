@@ -12,7 +12,7 @@ def send_activation_email(user, uidb64: str, token: str) -> None:
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@videoflix.local')
     to = [user.email]
     frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://127.0.0.1:5500')
-    activation_link = f'{frontend_base}/activate.html?uid={uidb64}&token={token}'
+    activation_link = f'{frontend_base}/pages/auth/activate.html?uid={uidb64}&token={token}'
     context = {
         'user_email': user.email,
         'activation_link': activation_link,
@@ -31,7 +31,7 @@ def send_password_reset_email(user, uidb64: str, token: str) -> None:
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@videoflix.local')
     to = [user.email]
     frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://127.0.0.1:5500')
-    reset_link = f'{frontend_base}/password-reset.html?uid={uidb64}&token={token}'
+    reset_link = f'{frontend_base}/pages/auth/forgot_password.html?uid={uidb64}&token={token}'
     context = {
         'user_email': user.email,
         'reset_link': reset_link,
