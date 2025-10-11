@@ -84,8 +84,33 @@ CSRF_TRUSTED_ORIGINS=http://127.0.0.1:5500
 
 REDIS_HOST=redis
 REDIS_PORT=6379
+
 ```
 
+### ⚙️ Important: Fix line endings on Windows (CRLF → LF)
+
+If you cloned this repository on **Windows**, the file  
+`backend.entrypoint.sh` might have **Windows line endings (CRLF)**.
+
+This causes the following error when starting the Docker containers:
+ - videoflix_backend | exec ./backend.entrypoint.sh: no such file or directory
+ - videoflix_backend exited with code 255
+
+ 
+✅ **Fix in VS Code:**
+
+1. Open the file `backend.entrypoint.sh`  
+2. In the bottom-right corner, click where it says `CRLF`
+3. Select **`LF`**
+4. Save the file (`Ctrl + S`)
+5. Rebuild and restart Docker:
+   ```bash
+   docker compose down -v --remove-orphans
+   docker compose build --no-cache
+   docker compose up
+   ```
+   
+------------------------------------------
 
 ### 3. Build and start all services
 ```bash
