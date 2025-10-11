@@ -10,6 +10,7 @@ from django.core.mail import send_mail
 from rest_framework.views import APIView  
 from rest_framework.response import Response  
 from rest_framework import status  
+from auth_app.tasks import send_activation_email_async, send_password_reset_email_async
 from auth_app.api.serializers import RegisterSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer  
 from auth_app.emails import send_activation_email, send_password_reset_email  
 import secrets  
@@ -32,7 +33,8 @@ class RegisterView(APIView):
         user = serializer.save()  
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))  
         token = default_token_generator.make_token(user)  
-        send_activation_email(user, uidb64, token)          
+        # send_activation_email(user, uidb64, token)          
+        send_activation_email_async(user, uidb64, token)
         return Response(serializer.data, status=status.HTTP_201_CREATED)  
 
 
@@ -179,7 +181,8 @@ class PasswordResetRequestView(APIView):
         if user:
             uidb64 = urlsafe_base64_encode(force_bytes(user.pk))  
             token = default_token_generator.make_token(user)  
-            send_password_reset_email(user, uidb64, token)
+            # send_password_reset_email(user, uidb64, token)
+            send_password_reset_email_async(user, uidb64, token)
         return Response(
             {'detail': 'An email has been sent to reset your password.'},
             status=status.HTTP_200_OK

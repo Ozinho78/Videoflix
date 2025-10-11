@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def send_activation_email(user, uidb64: str, token: str) -> None:
