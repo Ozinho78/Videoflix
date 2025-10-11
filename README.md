@@ -85,6 +85,14 @@ CSRF_TRUSTED_ORIGINS=http://127.0.0.1:5500
 REDIS_HOST=redis
 REDIS_PORT=6379
 
+EMAIL_HOST=smtp.mailprovider.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_USE_SSL=False
+EMAIL_HOST_USER=your_mailaddress_user
+EMAIL_HOST_PASSWORD=your_mail_password
+DEFAULT_FROM_EMAIL=your_default_email
+
 ```
 
 ### ⚙️ Important: Fix line endings on Windows (CRLF → LF)
