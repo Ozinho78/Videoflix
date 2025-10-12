@@ -19,7 +19,7 @@ RUN apk update && \
 
 # RUN apk add --no-cache ffmpeg
 
-# RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 RUN mkdir -p /app/logs && chmod -R 777 /app/logs
 
