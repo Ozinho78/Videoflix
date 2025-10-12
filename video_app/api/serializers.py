@@ -11,8 +11,8 @@ class VideoSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'thumbnail_url']
 
     def get_thumbnail_url(self, obj):
-        """Build absolute URL for thumbnail (placeholder for now)"""
+        """Return absolute thumbnail URL or None if missing"""
         request = self.context.get('request')
-        if obj.file and hasattr(obj.file, 'url'):
-            return request.build_absolute_uri(obj.file.url)
+        if obj.thumbnail and hasattr(obj.thumbnail, 'url'):
+            return request.build_absolute_uri(obj.thumbnail.url) # http://127.0.0.1:8000/media/thumbnails/1.jpg
         return None
