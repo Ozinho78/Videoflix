@@ -235,3 +235,4 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@videoflix.local')
 
 # Base URL used in activation/password-reset emails
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://127.0.0.1:5500')
+BACKEND_BASE_URL = 'http://127.0.0.1:8000'

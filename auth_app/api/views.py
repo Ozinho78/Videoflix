@@ -1,4 +1,5 @@
 from django.contrib.auth import login  
+from django.shortcuts import render
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode  
 from django.utils.encoding import force_bytes         
 from django.contrib.auth.models import User  
@@ -215,3 +216,42 @@ class PasswordResetConfirmView(APIView):
         user.set_password(new_password)  
         user.save(update_fields=['password'])  
         return Response({'detail': 'Your Password has been successfully reset.'}, status=status.HTTP_200_OK)
+    
+class PasswordResetHTMLView(APIView):
+    """
+    GET /api/password_reset_page/<uidb64>/<token>/
+    Displays a backend-rendered HTML page where the user can set a new password.
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, uidb64, token, *args, **kwargs):
+        try:
+            uid = int(urlsafe_base64_decode(uidb64).decode('utf-8'))
+            user = User.objects.get(pk=uid)
+        except Exception:
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return render(request, 'auth_app/password_reset_form.html', {'uidb64': uidb64, 'token': token})
+
+    def post(self, request, uidb64, token, *args, **kwargs):
+        """Handles form submission from the rendered page"""
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            uid = int(urlsafe_base64_decode(uidb64).decode('utf-8'))
+            user = User.objects.get(pk=uid)
+        except Exception:
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({'detail': 'Invalid or expired reset link.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+        return render(request, 'auth_app/password_reset_done.html', {'user': user})
