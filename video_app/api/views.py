@@ -17,6 +17,12 @@ class VideoListView(generics.ListAPIView):
     serializer_class = VideoSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def get_serializer_context(self):
+        """Ensure request is passed to serializer (needed for absolute URLs)"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
     
 class VideoStreamView(APIView):
     """

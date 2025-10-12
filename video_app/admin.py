@@ -10,8 +10,9 @@ class VideoAdmin(admin.ModelAdmin):
     list_filter = ('created_at', 'category')
     ordering = ('-created_at',)
     fieldsets = (
-        ('Primary Info', {'fields': ('title', 'description', 'category')}),  
-        ('File', {'fields': ('file',)}),
+        ('Primary Info', {'fields': ('title', 'description', 'category')}),
+        ('Media', {'fields': ('file', 'thumbnail')}),
+        # ('File', {'fields': ('file',)}),
         ('Timestamps', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
     readonly_fields = ('created_at', 'updated_at')
