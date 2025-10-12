@@ -1,8 +1,15 @@
-from django.db import models  
+from django.db import models
+import os
+
 
 def video_upload_path(instance, filename):
     """Upload all videos directly into MEDIA_ROOT/videos/"""    
     return f'videos/{filename}'
+
+def thumbnail_upload_path(instance, filename):
+    """Store thumbnails under MEDIA_ROOT/thumbnails/<video_id>.jpg"""
+    base, ext = os.path.splitext(filename)
+    return f'thumbnails/{instance.id or "temp"}{ext}'
 
 class Video(models.Model):
     """Stores an uploaded video file and basic metadata"""
@@ -15,6 +22,7 @@ class Video(models.Model):
         null=True
     )
     file = models.FileField(upload_to=video_upload_path, help_text='Upload the original video file')
+    thumbnail = models.ImageField(upload_to=thumbnail_upload_path, blank=True, null=True, help_text='Optional thumbnail image')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

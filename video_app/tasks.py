@@ -6,6 +6,36 @@ from video_app.models import Video
 
 logger = logging.getLogger(__name__)
 
+
+def generate_thumbnail(video_id: int, input_path: str):
+    """
+    Create a single thumbnail (JPG) from the middle of the video using ffmpeg
+    Saves to MEDIA_ROOT/thumbnails/<video_id>.jpg
+    """
+    output_dir = os.path.join(settings.MEDIA_ROOT, 'thumbnails')
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f'{video_id}.jpg')
+
+    cmd = [
+        'ffmpeg', '-y',
+        '-i', input_path,
+        '-ss', '00:00:02',
+        '-vframes', '1',
+        '-q:v', '2',
+        output_path
+    ]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+        logger.info(f'Thumbnail created for video {video_id}')
+        from video_app.models import Video
+        video = Video.objects.get(id=video_id)
+        relative_path = os.path.relpath(output_path, settings.MEDIA_ROOT)
+        video.thumbnail.name = relative_path
+        video.save(update_fields=['thumbnail'])
+    except subprocess.CalledProcessError as e:
+        logger.error(f'Failed to create thumbnail for {video_id}: {e.stderr.decode()}')
+
+
 def transcode_to_hls(video_id: int, input_path: str):
     """
     Transcode a video file into multiple HLS renditions (480p, 720p, 1080p)
@@ -43,3 +73,4 @@ def transcode_to_hls(video_id: int, input_path: str):
         except subprocess.CalledProcessError as e:
             logger.error(f'Error transcoding {res} for video {video_id}: {e.stderr.decode()}')
     logger.info(f'Completed transcoding for video {video_id}')
+    generate_thumbnail(video_id, input_path)

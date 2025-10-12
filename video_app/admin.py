@@ -15,3 +15,8 @@ class VideoAdmin(admin.ModelAdmin):
         ('Timestamps', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
     readonly_fields = ('created_at', 'updated_at')
+    
+    def has_thumbnail(self, obj):
+        """Show ✓ if a thumbnail exists."""
+        return bool(obj.thumbnail)
+    has_thumbnail.boolean = True
