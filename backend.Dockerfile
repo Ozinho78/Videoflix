@@ -17,9 +17,9 @@ RUN apk update && \
     apk del .build-deps && \
     chmod +x backend.entrypoint.sh
 
-RUN apk add --no-cache ffmpeg
+# RUN apk add --no-cache ffmpeg
 
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# RUN pip install --upgrade pip && pip install -r requirements.txt
 
 RUN mkdir -p /app/logs && chmod -R 777 /app/logs
 
