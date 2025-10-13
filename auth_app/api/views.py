@@ -217,6 +217,7 @@ class PasswordResetConfirmView(APIView):
         user.save(update_fields=['password'])  
         return Response({'detail': 'Your Password has been successfully reset.'}, status=status.HTTP_200_OK)
     
+
 class PasswordResetHTMLView(APIView):
     """
     GET /api/password_reset_page/<uidb64>/<token>/
